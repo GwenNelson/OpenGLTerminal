@@ -66,14 +66,23 @@ GLTerminal* init_gl_term() {
      
      term->fd_slave = open(ptsname(term->fd_master), O_RDWR);
      term->render_target_fb=0;
+     glGenFramebuffers(1,&(term->render_target_fb));
+     glBindFramebuffer(GL_FRAMEBUFFER,term->render_target_fb);
+
      GLuint tex_id;
      glGenTextures(1,&tex_id);
      term->render_target = tex_id;
      glBindTexture(GL_TEXTURE_2D,tex_id);
 
-     glTexImage2D(GL_TEXTURE_2D, 0,3, 512, 512, 0,GL_RGB, GL_UNSIGNED_BYTE,NULL);
+     glTexImage2D(GL_TEXTURE_2D, 0,3, 1024, 1024, 0,GL_RGB, GL_UNSIGNED_BYTE,NULL);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, term->render_target,0);
+     GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+     glDrawBuffers(1,DrawBuffers);
+     glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+     memset((void*)term->contents,' ',sizeof(char)*80*25);
      return term;
 }
 
@@ -93,7 +102,9 @@ void update_gl_term(GLTerminal* term) {
 }
 
 void render_gl_term(GLTerminal* term) {
+     glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
      glDisable(GL_TEXTURE_2D);
+     glClearColor(0.0f,0.0f,0.0f,0.0f);
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      glLoadIdentity();
      glTranslatef(0.0f, 0.0f, -5.0f);
@@ -104,9 +115,9 @@ void render_gl_term(GLTerminal* term) {
      glEnd();
      glColor3d(1,1,1);
      glEnable(GL_TEXTURE_2D);
-     glBindTexture(GL_TEXTURE_2D,term->render_target);
-     glCopyTexSubImage2D(GL_TEXTURE_2D,0,0,0,0,0,512,512);
-     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//     glBindTexture(GL_TEXTURE_2D,term->render_target);
+//     glCopyTexSubImage2D(GL_TEXTURE_2D,0,0,0,0,0,1024,1024);
+     glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
 FILE* gl_term_run(GLTerminal* term, char* cmd) {

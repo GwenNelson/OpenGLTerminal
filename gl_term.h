@@ -40,6 +40,7 @@ typedef struct GLTerminal {
     int    fd_slave;
     int    fd_master;
     char   pending_input[150];
+    char   contents[80][25];
     int    pending_input_size;
 } GLTerminal;
 

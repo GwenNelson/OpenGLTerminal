@@ -55,7 +55,7 @@ GLfloat zrot;
 void init_gl() {
      glEnable(GL_TEXTURE_2D);
      glShadeModel(GL_SMOOTH);
-     glClearColor(0.0f,0.0f,0.0f,0.0f);
+     glClearColor(0.0f,0.0f,1.0f,1.0f);
      glClearDepth(1.0f);
      glEnable(GL_DEPTH_TEST);
      glDepthFunc(GL_LEQUAL);
@@ -197,9 +197,12 @@ int main(int argc, char** argv) {
               break;
            }
         }
-       update_gl_term(t);
+//       update_gl_term(t);
+       glClearColor(0.0f,0.0f,1.0f,1.0f);
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
        render_gl_term(t);
+       glClearColor(0.0f,0.0f,1.0f,1.0f);
+       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
        render_cube(t);
        SDL_GL_SwapWindow(gWindow);
     }
