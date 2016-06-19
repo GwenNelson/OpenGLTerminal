@@ -31,8 +31,10 @@
 
 #ifdef __MACH__
 #include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
 #else
 #include <GL/gl.h>
+#include <GL/glu.h>
 #endif
 
 #include <SDL.h>
@@ -171,7 +173,6 @@ void resizeWindow( int width, int height )
 
 
 int main(int argc, char** argv) {
-    int videoFlags;
     SDL_Init(SDL_INIT_VIDEO);
 
 
@@ -180,7 +181,7 @@ int main(int argc, char** argv) {
      gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN );
       
 
-    SDL_GLContext *gContext = SDL_GL_CreateContext(gWindow);
+    SDL_GL_CreateContext(gWindow);
 
     init_gl();
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
