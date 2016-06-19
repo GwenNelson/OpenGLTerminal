@@ -42,8 +42,8 @@
 SDL_Surface *surface;
 SDL_Window *gWindow;
 
-#define SCREEN_WIDTH  512
-#define SCREEN_HEIGHT 512
+#define SCREEN_WIDTH  640
+#define SCREEN_HEIGHT 480
 #define SCREEN_BPP    24
 
 GLfloat xrot;
@@ -63,6 +63,7 @@ void init_gl() {
 }
 
 void render_cube(GLTerminal* t) {
+     glMatrixMode(GL_MODELVIEW);
      glLoadIdentity();
      glTranslatef(0.0f, 0.0f, -5.0f);
 
@@ -198,11 +199,11 @@ int main(int argc, char** argv) {
            }
         }
 //       update_gl_term(t);
+       t->contents[0][0]='H';
+       t->contents[0][1]='i';
        glClearColor(0.0f,0.0f,1.0f,1.0f);
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
        render_gl_term(t);
-       glClearColor(0.0f,0.0f,1.0f,1.0f);
-       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
        render_cube(t);
        SDL_GL_SwapWindow(gWindow);
     }

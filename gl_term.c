@@ -40,6 +40,14 @@
 #include <GL/gl.h>
 #endif
 
+// shamelessly ripped from OGLConsole
+#include "console_font.c"
+#define CHAR_PIXEL_W 6
+#define CHAR_PIXEL_H 13
+#define CHAR_WIDTH 0.0234375 /* ogl tex coords */
+#define CHAR_HEIGHT 0.203125 /* ogl tex coords */
+
+#define TERM_SIZE 512
 GLTerminal* init_gl_term() {
      int rc=0;
      GLTerminal* term  = (GLTerminal*)malloc(sizeof(GLTerminal));
@@ -66,6 +74,19 @@ GLTerminal* init_gl_term() {
      
      term->fd_slave = open(ptsname(term->fd_master), O_RDWR);
      term->render_target_fb=0;
+
+     // setup font
+     glGenTextures(1,&(term->font_texture));
+     glBindTexture(GL_TEXTURE_2D, term->font_texture);
+
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+     glTexImage2D(GL_TEXTURE_2D,0, GL_RGB, Console_FontData.width,
+                                           Console_FontData.height,
+                                           0, GL_RGB, GL_UNSIGNED_BYTE, Console_FontData.pixel_data);
+
+     // configure render target
      glGenFramebuffers(1,&(term->render_target_fb));
      glBindFramebuffer(GL_FRAMEBUFFER,term->render_target_fb);
 
@@ -74,7 +95,7 @@ GLTerminal* init_gl_term() {
      term->render_target = tex_id;
      glBindTexture(GL_TEXTURE_2D,tex_id);
 
-     glTexImage2D(GL_TEXTURE_2D, 0,3, 1024, 1024, 0,GL_RGB, GL_UNSIGNED_BYTE,NULL);
+     glTexImage2D(GL_TEXTURE_2D, 0,3, TERM_SIZE, TERM_SIZE, 0,GL_RGB, GL_UNSIGNED_BYTE,NULL);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
      glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, term->render_target,0);
@@ -103,20 +124,69 @@ void update_gl_term(GLTerminal* term) {
 
 void render_gl_term(GLTerminal* term) {
      glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
+     glPushAttrib(GL_ALL_ATTRIB_BITS);
      glDisable(GL_TEXTURE_2D);
+
      glClearColor(0.0f,0.0f,0.0f,0.0f);
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+     glMatrixMode(GL_PROJECTION);
+     glPushMatrix();
      glLoadIdentity();
-     glTranslatef(0.0f, 0.0f, -5.0f);
-     glColor3d(1,0,0);
-     glBegin(GL_LINES);
-       glVertex2f(-1.0f,-1.0f);
-       glVertex2f(1.0f,1.0f);
+     glOrtho(0, TERM_SIZE, 0, TERM_SIZE, -1,1);
+
+     glMatrixMode(GL_MODELVIEW);
+     glPushMatrix();
+     glLoadIdentity();
+     
+     glDisable(GL_DEPTH_TEST);
+     glDisable(GL_TEXTURE_2D);
+     glEnable(GL_BLEND);
+     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+     glColor4d(.1,0,0,0.5);
+     glBegin(GL_QUADS);
+       glVertex3d(0,0,0);
+       glVertex3d(TERM_SIZE,0,0);
+       glVertex3d(TERM_SIZE,TERM_SIZE,0);
+       glVertex3d(0,TERM_SIZE,0);
      glEnd();
-     glColor3d(1,1,1);
+
+     glBlendFunc(GL_ONE, GL_ONE);
+
      glEnable(GL_TEXTURE_2D);
-//     glBindTexture(GL_TEXTURE_2D,term->render_target);
-//     glCopyTexSubImage2D(GL_TEXTURE_2D,0,0,0,0,0,1024,1024);
+     glBindTexture(GL_TEXTURE_2D, term->font_texture);
+     glColor3d(1,1,1); // text colour
+     int row=0;
+     int col=0;
+     int c;
+     double cx, cy, cX, cY;
+     double x, y, z, w, h;
+     glBegin(GL_QUADS);
+     for(row=0; row<80; row++) {
+
+         for(col=0; col<25; col++) {
+             c  = term->contents[row][col]-' ';
+             x  = col * CHAR_PIXEL_W;
+             y  = row * CHAR_PIXEL_H;
+             z  = 0.0f;
+             w  = CHAR_PIXEL_W;
+             h  = CHAR_PIXEL_H;
+             cx = (c % 42) * CHAR_WIDTH;
+             cy = 1.0 - (c / 42) * CHAR_HEIGHT;
+             cX = cx + CHAR_WIDTH;
+             cY = 1.0 - (c / 42 + 1) * CHAR_HEIGHT;
+             glTexCoord2d(cx, cy); glVertex3d(x,   y,   z);
+             glTexCoord2d(cX, cy); glVertex3d(x+w, y,   z);
+             glTexCoord2d(cX, cY); glVertex3d(x+w, y+h, z);
+             glTexCoord2d(cx, cY); glVertex3d(x,   y+h, z);
+
+         }
+     }
+     glEnd();
+     glPopMatrix();
+     glMatrixMode(GL_PROJECTION);
+     glPopMatrix();
+     glPopAttrib();
      glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
