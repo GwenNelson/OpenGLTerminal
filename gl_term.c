@@ -41,8 +41,8 @@
 #endif
 
 void init_gl_term(GLTerminal* term) {
-     int rc;
-     term            = (GLterminal*)malloc(sizeof(GLTerminal));
+     int rc=0;
+     term            = (GLTerminal*)malloc(sizeof(GLTerminal));
      term->fd_master = posix_openpt(O_RDWR);
      if(term->fd_master < 0) {
         fprintf(stderr,"Error %d in posix_openpt()\n",errno);
@@ -65,17 +65,30 @@ void init_gl_term(GLTerminal* term) {
      }
      
      term->fd_slave = open(ptsname(term->fd_master), O_RDWR);
+     term->render_target_fb=0;
+     glGenFramebuffers(1,&(term->render_target_fb));
+     glBindFramebuffer(GL_FRAMEBUFFER,term->render_target_fb);
+     term->render_target = 0;
+     glGenTextures(1,&(term->render_target));
+     glBindTexture(GL_TEXTURE_2D, term->render_target);
+     glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 512, 512, 0,GL_RGB, GL_UNSIGNED_BYTE,0);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, term->render_target, 0);
+     GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+     glDrawBuffers(1,DrawBuffers);
+     glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
 void update_gl_term(GLTerminal* term) {
      int rc;
      char input[150];
-     rc = read(term->fd_master,sizeof(input)-1);
+     rc = read(term->fd_master,input,sizeof(input)-1);
      if(rc>0) {
          // send contents of input to the terminal here
      } else {
-         fprintf(stderr,"GLTerminal closed\n");
-         return;
+//         fprintf(stderr,"GLTerminal closed\n");
+//         return;
      }
      if(term->pending_input_size > 0) {
         write(term->fd_master,term->pending_input,term->pending_input_size);
@@ -83,7 +96,22 @@ void update_gl_term(GLTerminal* term) {
 }
 
 void render_gl_term(GLTerminal* term) {
-     
+     glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
+     glDisable(GL_TEXTURE_2D);
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+     glLoadIdentity();
+     glTranslatef(0.0f, 0.0f, -5.0f);
+     glColor3d(1,0,0);
+     glBegin(GL_LINES);
+       glVertex2f(-1.0f,-1.0f);
+       glVertex2f(1.0f,1.0f);
+     glEnd();
+     glColor3d(1,1,1);
+     glEnable(GL_TEXTURE_2D);
+     glBindTexture(GL_TEXTURE_2D,term->render_target);
+     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0,0,0,0,512,512);
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+     glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
 FILE* gl_term_run(GLTerminal* term, char* cmd) {
@@ -96,22 +124,25 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
          struct termios slave_orig_term_settings;
          struct termios new_term_settings;
 
-         rc                = tcgetaddr(term->fd_slave, &slave_orig_term_settings);
+         rc                = tcgetattr(term->fd_slave, &slave_orig_term_settings);
          new_term_settings = slave_orig_term_settings;
          cfmakeraw(&new_term_settings);
          tcsetattr(term->fd_slave, TCSANOW, &new_term_settings);
          close(0);
          close(1);
          close(2);
-         dup(fds);
-         dup(fds);
-         dup(fds);
+         dup(term->fd_slave);
+         dup(term->fd_slave);
+         dup(term->fd_slave);
          close(term->fd_slave);
          setsid();
          ioctl(0, TIOCSCTTY, 1);
          system(cmd);
+         return (FILE*)NULL;
       }
 }
 
 void close_gl_term(GLTerminal* term) {
+     close(term->fd_master);
+     free(term);
 }

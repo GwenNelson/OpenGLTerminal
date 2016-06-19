@@ -36,6 +36,7 @@
 typedef struct GLTerminal {
     GLuint render_target;
     GLuint font_texture;
+    GLuint render_target_fb;
     int    fd_slave;
     int    fd_master;
     char   pending_input[150];
