@@ -68,7 +68,6 @@ void render_cube(GLTerminal* t) {
      glRotatef( yrot, 0.0f, 1.0f, 0.0f); /* Rotate On The Y Axis */
      glRotatef( zrot, 0.0f, 0.0f, 1.0f); /* Rotate On The Z Axis */
      
-     printf("%d\n",t->render_target);
      glBindTexture(GL_TEXTURE_2D,t->render_target);
 
      glEnable(GL_TEXTURE_2D);
@@ -187,7 +186,7 @@ int main(int argc, char** argv) {
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     GLTerminal *t=init_gl_term();
-//    gl_term_run(&t, "sh");
+    gl_term_run(t, "sh");
     SDL_Event e;
     while(1) {
         while(SDL_PollEvent(&e)) {
@@ -197,7 +196,7 @@ int main(int argc, char** argv) {
               break;
            }
         }
- //      update_gl_term(&t);
+       update_gl_term(t);
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
        render_gl_term(t);
        render_cube(t);
