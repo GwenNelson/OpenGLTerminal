@@ -1,7 +1,7 @@
 CC = cc  -Wall -g 
 
 all:
-	$(CC) gl_term.c glterm_test.c -o glterm_test -framework OpenGL -lGLU -lm `sdl-config --cflags --libs` 
+	$(CC) gl_term.c glterm_test.c -o glterm_test -lGL -lGLU -lm `sdl2-config --cflags --libs` 
 
 clean:
 	@echo Cleaning up...

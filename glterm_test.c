@@ -38,6 +38,7 @@
 #include <SDL.h>
 
 SDL_Surface *surface;
+SDL_Window *gWindow;
 
 #define SCREEN_WIDTH  512
 #define SCREEN_HEIGHT 512
@@ -48,7 +49,6 @@ GLfloat yrot;
 GLfloat zrot;
 
 #include "gl_term.h"
-GLTerminal t;
 
 void init_gl() {
      glEnable(GL_TEXTURE_2D);
@@ -60,7 +60,7 @@ void init_gl() {
      glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 }
 
-void render_cube() {
+void render_cube(GLTerminal* t) {
      glLoadIdentity();
      glTranslatef(0.0f, 0.0f, -5.0f);
 
@@ -68,7 +68,8 @@ void render_cube() {
      glRotatef( yrot, 0.0f, 1.0f, 0.0f); /* Rotate On The Y Axis */
      glRotatef( zrot, 0.0f, 0.0f, 1.0f); /* Rotate On The Z Axis */
      
-     glBindTexture(GL_TEXTURE_2D,t.render_target);
+     printf("%d\n",t->render_target);
+     glBindTexture(GL_TEXTURE_2D,t->render_target);
 
      glEnable(GL_TEXTURE_2D);
  glBegin(GL_QUADS);
@@ -172,33 +173,20 @@ void resizeWindow( int width, int height )
 
 int main(int argc, char** argv) {
     int videoFlags;
-    const SDL_VideoInfo *videoInfo;
     SDL_Init(SDL_INIT_VIDEO);
-    videoInfo = SDL_GetVideoInfo();
-    videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
-    videoFlags |= SDL_GL_DOUBLEBUFFER; /* Enable double buffering */
-    videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
-    videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
-    if ( videoInfo->hw_available )
-	videoFlags |= SDL_HWSURFACE;
-    else
-	videoFlags |= SDL_SWSURFACE;
 
-    if ( videoInfo->blit_hw )
-	videoFlags |= SDL_HWACCEL;
 
-    SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
-    /* get a SDL surface */
-    surface = SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP,
-				videoFlags );
 
- 
+     gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN );
+      
+
+    SDL_GLContext *gContext = SDL_GL_CreateContext(gWindow);
 
     init_gl();
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    init_gl_term(&t);
+    GLTerminal *t=init_gl_term();
 //    gl_term_run(&t, "sh");
     SDL_Event e;
     while(1) {
@@ -211,8 +199,8 @@ int main(int argc, char** argv) {
         }
  //      update_gl_term(&t);
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-       render_gl_term(&t);
-       render_cube();
-       SDL_GL_SwapBuffers();
+       render_gl_term(t);
+       render_cube(t);
+       SDL_GL_SwapWindow(gWindow);
     }
 }
