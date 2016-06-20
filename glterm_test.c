@@ -42,8 +42,8 @@
 SDL_Surface *surface;
 SDL_Window *gWindow;
 
-#define SCREEN_WIDTH  512
-#define SCREEN_HEIGHT 512
+#define SCREEN_WIDTH  1280
+#define SCREEN_HEIGHT 720
 #define SCREEN_BPP    24
 
 GLfloat xrot;
@@ -92,23 +92,23 @@ glMatrixMode(GL_MODELVIEW);
 
       /* Back Face */
       /* Bottom Right Of The Texture and Quad */
-      glTexCoord2f( 0.0f, 0.0f ); glVertex3f( -1.0f, -1.0f, -1.0f );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3f( -1.0f, -1.0f, -1.0f );
       /* Top Right Of The Texture and Quad */
-      glTexCoord2f( 0.0f, 1.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
       /* Top Left Of The Texture and Quad */
-      glTexCoord2f( 1.0f, 1.0f ); glVertex3f(  1.0f,  1.0f, -1.0f );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3f(  1.0f,  1.0f, -1.0f );
       /* Bottom Left Of The Texture and Quad */
-      glTexCoord2f( 1.0f, 0.0f ); glVertex3f(  1.0f, -1.0f, -1.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3f(  1.0f, -1.0f, -1.0f );
 
       /* Top Face */
       /* Top Left Of The Texture and Quad */
-      glTexCoord2f( 1.0f, 1.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
       /* Bottom Left Of The Texture and Quad */
-      glTexCoord2f( 1.0f, 0.0f ); glVertex3f( -1.0f,  1.0f,  1.0f );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3f( -1.0f,  1.0f,  1.0f );
       /* Bottom Right Of The Texture and Quad */
-      glTexCoord2f( 0.0f, 0.0f ); glVertex3f(  1.0f,  1.0f,  1.0f );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3f(  1.0f,  1.0f,  1.0f );
       /* Top Right Of The Texture and Quad */
-      glTexCoord2f( 0.0f, 1.0f ); glVertex3f(  1.0f,  1.0f, -1.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3f(  1.0f,  1.0f, -1.0f );
 
       /* Bottom Face */
       /* Top Right Of The Texture and Quad */
@@ -122,27 +122,27 @@ glMatrixMode(GL_MODELVIEW);
 
       /* Right face */
       /* Bottom Right Of The Texture and Quad */
-      glTexCoord2f( 0.0f, 0.0f ); glVertex3f( 1.0f, -1.0f, -1.0f );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3f( 1.0f, -1.0f, -1.0f );
       /* Top Right Of The Texture and Quad */
-      glTexCoord2f( 0.0f, 1.0f ); glVertex3f( 1.0f,  1.0f, -1.0f );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3f( 1.0f,  1.0f, -1.0f );
       /* Top Left Of The Texture and Quad */
-      glTexCoord2f( 1.0f, 1.0f ); glVertex3f( 1.0f,  1.0f,  1.0f );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3f( 1.0f,  1.0f,  1.0f );
       /* Bottom Left Of The Texture and Quad */
-      glTexCoord2f( 1.0f, 0.0f ); glVertex3f( 1.0f, -1.0f,  1.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3f( 1.0f, -1.0f,  1.0f );
 
       /* Left Face */
       /* Bottom Left Of The Texture and Quad */
-      glTexCoord2f( 1.0f, 0.0f ); glVertex3f( -1.0f, -1.0f, -1.0f );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3f( -1.0f, -1.0f, -1.0f );
       /* Bottom Right Of The Texture and Quad */
-      glTexCoord2f( 0.0f, 0.0f ); glVertex3f( -1.0f, -1.0f,  1.0f );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3f( -1.0f, -1.0f,  1.0f );
       /* Top Right Of The Texture and Quad */
-      glTexCoord2f( 0.0f, 1.0f ); glVertex3f( -1.0f,  1.0f,  1.0f );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3f( -1.0f,  1.0f,  1.0f );
       /* Top Left Of The Texture and Quad */
-      glTexCoord2f( 1.0f, 1.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
     glEnd( );
-//    xrot += 0.1f; /* X Axis Rotation */
+    xrot += 0.1f; /* X Axis Rotation */
     yrot += 0.9f; /* Y Axis Rotation */
-//    zrot += 0.1f;
+    zrot += 0.1f;
 }
 
 void resizeWindow( int width, int height )
