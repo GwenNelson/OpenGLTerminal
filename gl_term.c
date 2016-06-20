@@ -93,8 +93,8 @@ GLTerminal* init_gl_term() {
      glGenTextures(1,&(term->font_texture));
      glBindTexture(GL_TEXTURE_2D, term->font_texture);
 
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
      glTexImage2D(GL_TEXTURE_2D,0, GL_RGB, Console_FontData.width,
                                            Console_FontData.height,
@@ -124,10 +124,12 @@ GLTerminal* init_gl_term() {
 
 /*********
   TODO - Test some different strings to figure out EOL character
+         Split terminal into rows
  *********/
 void update_gl_term(GLTerminal* term) {
      int rc;
      char input[150];
+     memset((void*)input,0,150);
      rc = read(term->fd_master,input,sizeof(input)-1);
      if(rc>0) {
          vterm_input_write(term->vt, input,rc);
@@ -145,16 +147,27 @@ void update_gl_term(GLTerminal* term) {
      rect.start_col=0;
      rect.end_row=25;
      rect.end_col=80;
-     memset((void*)term->contents,0,sizeof(char)*80*25);
-     vterm_screen_get_text(term->vts, &(term->contents),80*25,rect);
-//     term->contents[25][80]=0;
-  /*   printf("TERMINAL START====\n");
-     printf("%s\n",(char*)term->contents);
-     printf("TERMINAL END====\n");*/
+     memset((void*)term->contents,' ',sizeof(char)*80*25);
+     char buffer[25][80];
+     vterm_screen_get_text(term->vts, &(term->contents),sizeof(char)*80*25,rect);
+//     memcpy(&buffer,&(term->contents),80*25*sizeof(char));
+     int row=0;
+     int col=0;
+     VTermPos pos;
+     for(row=0; row<25; row++) {
+         for(col=0; col<80; col++) {
+             pos.col = col;
+             pos.row = row;
+             vterm_screen_get_cell(term->vts,pos,&cell);
+             term->contents[25-1-row][col] = cell.chars[0];
+         }
+     }
 }
 
 void render_gl_term(GLTerminal* term) {
-//     glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
+     glMatrixMode(GL_TEXTURE);
+     glLoadIdentity();
+     glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
      glClearColor(0.0f,0.0f,0.0f,0.0f);
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      int i=0;
@@ -167,16 +180,6 @@ void render_gl_term(GLTerminal* term) {
      glMatrixMode(GL_MODELVIEW);
      glPushMatrix();
      glLoadIdentity();
-     glBegin(GL_LINES);
-     for(i=0; i<80; i++) {
-         glVertex2f(i*(TERM_SIZE/80),0.0f);
-         glVertex2f(i*(TERM_SIZE/80),TERM_SIZE);
-     }
-     for(i=0; i<25; i++) {
-         glVertex2f(0.0f,i*(TERM_SIZE/25));
-         glVertex2f(TERM_SIZE,i*(TERM_SIZE/25));
-     }
-     glEnd();
      glEnable(GL_TEXTURE_2D);
      int row=0;
      int col=0;
@@ -187,7 +190,7 @@ void render_gl_term(GLTerminal* term) {
      VTermPos cur_pos;
      for(col=0; col<80; col++) {
          for(row=0; row<25; row++) {
-             cur_pos.row = row;
+             cur_pos.row = row+(25-CHAR_PIXEL_H);
              cur_pos.col = col;
              cur_char[0] = term->contents[row][col];
              OGLCONSOLE_DrawString(cur_char,col*(TERM_SIZE/80),row*(TERM_SIZE/25),CHAR_PIXEL_W,CHAR_PIXEL_H,0);
@@ -286,8 +289,8 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
   new_term_settings.c_cc[VERASE]   = 0x7f;
   new_term_settings.c_cc[VKILL]    = 0x1f & 'U';
   new_term_settings.c_cc[VEOF]     = 0x1f & 'D';
-  new_term_settings.c_cc[VEOL]     = _POSIX_VDISABLE;
-  new_term_settings.c_cc[VEOL2]    = _POSIX_VDISABLE;
+  new_term_settings.c_cc[VEOL]     = '\r';
+  new_term_settings.c_cc[VEOL2]    = '\n';
   new_term_settings.c_cc[VSTART]   = 0x1f & 'Q';
   new_term_settings.c_cc[VSTOP]    = 0x1f & 'S';
   new_term_settings.c_cc[VSUSP]    = 0x1f & 'Z';
@@ -298,6 +301,7 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
   new_term_settings.c_cc[VTIME]    = 0;
 
          tcsetattr(term->fd_slave, TCSANOW, &new_term_settings);
+
          close(0);
          close(1);
          close(2);

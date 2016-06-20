@@ -73,6 +73,11 @@ void render_cube(GLTerminal* t) {
      
      glBindTexture(GL_TEXTURE_2D,t->render_target);
 
+glMatrixMode(GL_TEXTURE);
+glLoadIdentity();
+glScalef(1.0f, -1.0f, 1.0f);
+glMatrixMode(GL_MODELVIEW);
+
      glEnable(GL_TEXTURE_2D);
  glBegin(GL_QUADS);
       /* Front Face */
@@ -135,9 +140,9 @@ void render_cube(GLTerminal* t) {
       /* Top Left Of The Texture and Quad */
       glTexCoord2f( 1.0f, 1.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
     glEnd( );
-    xrot += 0.1f; /* X Axis Rotation */
-    yrot += 0.1f; /* Y Axis Rotation */
-    zrot += 0.1f;
+//    xrot += 0.1f; /* X Axis Rotation */
+    yrot += 0.9f; /* Y Axis Rotation */
+//    zrot += 0.1f;
 }
 
 void resizeWindow( int width, int height )
@@ -188,8 +193,10 @@ int main(int argc, char** argv) {
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     GLTerminal *t=init_gl_term();
-    gl_term_run(t, "ls -l");
+    gl_term_run(t, "top");
+    update_gl_term(t);
     SDL_Event e;
+    render_gl_term(t);
     while(1) {
         while(SDL_PollEvent(&e)) {
            switch(e.type) {
@@ -203,7 +210,7 @@ int main(int argc, char** argv) {
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
        render_gl_term(t);
 
-//       render_cube(t);
+       render_cube(t);
 
        SDL_GL_SwapWindow(gWindow);
     }
