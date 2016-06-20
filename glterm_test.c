@@ -205,9 +205,10 @@ int main(int argc, char** argv) {
               break;
            }
         }
-       update_gl_term(t);
        glClearColor(0.0f,0.0f,1.0f,1.0f);
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+       update_gl_term(t);
+
        render_gl_term(t);
 
        render_cube(t);

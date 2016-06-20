@@ -272,6 +272,7 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
       int rc;
       if(fork()) {
          close(term->fd_slave);
+         fcntl(term->fd_master, F_SETFL, FNDELAY);
          return fdopen(term->fd_master,"r+");
       } else {
          close(term->fd_master);
@@ -282,7 +283,7 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
          new_term_settings = slave_orig_term_settings;
          new_term_settings.c_iflag = ICRNL|IXON;
          new_term_settings.c_oflag = OPOST|ONLCR;
-         new_term_settings.c_cflag = CS8|CREAD;
+         new_term_settings.c_cflag = CS8|CREAD|OFILL;
          new_term_settings.c_lflag = ISIG|ICANON|IEXTEN|ECHO|ECHOE|ECHOK;
   new_term_settings.c_cc[VINTR]    = 0x1f & 'C';
   new_term_settings.c_cc[VQUIT]    = 0x1f & '\\';
@@ -299,6 +300,7 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
   new_term_settings.c_cc[VLNEXT]   = 0x1f & 'V';
   new_term_settings.c_cc[VMIN]     = 1;
   new_term_settings.c_cc[VTIME]    = 0;
+         cfsetspeed(&new_term_settings, 38400);
 
          tcsetattr(term->fd_slave, TCSANOW, &new_term_settings);
 
