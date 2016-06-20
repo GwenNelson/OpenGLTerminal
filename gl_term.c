@@ -32,6 +32,8 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+#include <vterm.h>
+
 #include "gl_term.h"
 
 #ifdef __MACH__
@@ -73,6 +75,15 @@ GLTerminal* init_gl_term() {
      }
      
      term->fd_slave = open(ptsname(term->fd_master), O_RDWR);
+
+     term->vt = vterm_new(25,80);
+     vterm_set_utf8(term->vt, true);
+     term->vts = vterm_obtain_screen(term->vt);
+
+     vterm_screen_reset(term->vts,1);
+     int i=0;
+     for(i=0; i<80*25; i++) vterm_input_write(term->vt," ",1);
+
      term->render_target_fb=0;
 
      // setup font
@@ -112,14 +123,22 @@ void update_gl_term(GLTerminal* term) {
      char input[150];
      rc = read(term->fd_master,input,sizeof(input)-1);
      if(rc>0) {
+         vterm_input_write(term->vt, input,rc);
          // send contents of input to the terminal here
      } else {
 //         fprintf(stderr,"GLTerminal closed\n");
 //         return;
      }
-     if(term->pending_input_size > 0) {
-        write(term->fd_master,term->pending_input,term->pending_input_size);
-     }
+//     if(term->pending_input_size > 0) {
+//        write(term->fd_master,term->pending_input,term->pending_input_size);
+//     }
+     VTermScreenCell cell;
+     VTermRect rect = {0,0,0,0};
+     rect.start_row=0;
+     rect.start_col=0;
+     rect.end_row=25;
+     rect.end_col=80;
+     vterm_screen_get_text(term->vts, &(term->contents),80*25,rect);
 }
 
 void render_gl_term(GLTerminal* term) {
@@ -162,15 +181,14 @@ void render_gl_term(GLTerminal* term) {
      double cx, cy, cX, cY;
      double x, y, z, w, h;
      glBegin(GL_QUADS);
-     for(row=0; row<80; row++) {
-
-         for(col=0; col<25; col++) {
+     w = TERM_SIZE/80;
+     h = TERM_SIZE/25;
+     for(row=0; row<25; row++) {
+         for(col=0; col<80; col++) {
              c  = term->contents[row][col]-' ';
-             x  = col * CHAR_PIXEL_W;
-             y  = row * CHAR_PIXEL_H;
+             x  = col * w;
+             y  = row * h;
              z  = 0.0f;
-             w  = CHAR_PIXEL_W;
-             h  = CHAR_PIXEL_H;
              cx = (c % 42) * CHAR_WIDTH;
              cy = 1.0 - (c / 42) * CHAR_HEIGHT;
              cX = cx + CHAR_WIDTH;
@@ -213,8 +231,8 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
          close(term->fd_slave);
          setsid();
          ioctl(0, TIOCSCTTY, 1);
-         system(cmd);
-         return (FILE*)NULL;
+         char *argv[] = {"-l","-c",strdup(cmd),NULL};
+         execve("/bin/sh",argv,NULL);
       }
 }
 

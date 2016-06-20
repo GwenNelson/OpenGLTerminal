@@ -33,15 +33,19 @@
 #include <GL/gl.h>
 #endif
 
+#include <vterm.h>
+
 typedef struct GLTerminal {
-    GLuint render_target;
-    GLuint font_texture;
-    GLuint render_target_fb;
-    int    fd_slave;
-    int    fd_master;
-    char   pending_input[150];
-    char   contents[80][25];
-    int    pending_input_size;
+    GLuint      render_target;
+    GLuint      font_texture;
+    GLuint      render_target_fb;
+    int         fd_slave;
+    int         fd_master;
+    char        pending_input[150];
+    char        contents[25][80];
+    int         pending_input_size;
+    VTerm       *vt;
+    VTermScreen *vts;
 } GLTerminal;
 
 GLTerminal*  init_gl_term();    // Setup the terminal
