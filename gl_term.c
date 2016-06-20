@@ -139,10 +139,12 @@ void update_gl_term(GLTerminal* term) {
      rect.end_row=25;
      rect.end_col=80;
      vterm_screen_get_text(term->vts, &(term->contents),80*25,rect);
+     term->contents[25][80]=0;
+     printf("%s\n",term->contents);
 }
 
 void render_gl_term(GLTerminal* term) {
-     glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
+//     glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
      glPushAttrib(GL_ALL_ATTRIB_BITS);
      glDisable(GL_TEXTURE_2D);
 
@@ -205,7 +207,7 @@ void render_gl_term(GLTerminal* term) {
      glMatrixMode(GL_PROJECTION);
      glPopMatrix();
      glPopAttrib();
-     glBindFramebuffer(GL_FRAMEBUFFER,0);
+//     glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
 FILE* gl_term_run(GLTerminal* term, char* cmd) {
@@ -220,7 +222,6 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
 
          rc                = tcgetattr(term->fd_slave, &slave_orig_term_settings);
          new_term_settings = slave_orig_term_settings;
-         cfmakeraw(&new_term_settings);
          tcsetattr(term->fd_slave, TCSANOW, &new_term_settings);
          close(0);
          close(1);
@@ -232,7 +233,8 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
          setsid();
          ioctl(0, TIOCSCTTY, 1);
          char *argv[] = {"-l","-c",strdup(cmd),NULL};
-         execve("/bin/sh",argv,NULL);
+         char *envp[] = {"TERM=vt100",NULL};
+         execve("/bin/sh",argv,envp);
       }
 }
 

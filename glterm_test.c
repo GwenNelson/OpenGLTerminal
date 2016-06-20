@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     GLTerminal *t=init_gl_term();
-    gl_term_run(t, "ls");
+    gl_term_run(t, "ls -l");
     SDL_Event e;
     while(1) {
         while(SDL_PollEvent(&e)) {
@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
        glClearColor(0.0f,0.0f,1.0f,1.0f);
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
        render_gl_term(t);
-       render_cube(t);
+//       render_cube(t);
        SDL_GL_SwapWindow(gWindow);
     }
 }
