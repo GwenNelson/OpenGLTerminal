@@ -31,9 +31,11 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <util.h>
 
 #define DEBUG
 #include <vterm.h>
+#include "oglconsole.h"
 
 #include "gl_term.h"
 
@@ -78,7 +80,7 @@ GLTerminal* init_gl_term() {
      term->fd_slave = open(ptsname(term->fd_master), O_RDWR);
 
      term->vt = vterm_new(25,80);
-     vterm_set_utf8(term->vt, true);
+     vterm_set_utf8(term->vt, false);
      term->vts = vterm_obtain_screen(term->vt);
 
      vterm_screen_reset(term->vts,1);
@@ -141,15 +143,60 @@ void update_gl_term(GLTerminal* term) {
      rect.end_col=80;
      memset((void*)term->contents,0,sizeof(char)*80*25);
      vterm_screen_get_text(term->vts, &(term->contents),80*25,rect);
-     term->contents[25][80]=0;
-     printf("TERMINAL START====\n");
+//     term->contents[25][80]=0;
+  /*   printf("TERMINAL START====\n");
      printf("%s\n",(char*)term->contents);
-     printf("TERMINAL END====\n");
+     printf("TERMINAL END====\n");*/
 }
 
 void render_gl_term(GLTerminal* term) {
 //     glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
-     glPushAttrib(GL_ALL_ATTRIB_BITS);
+     glClearColor(0.0f,0.0f,0.0f,0.0f);
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+     int i=0;
+     glColor3d(1,1,1);
+     glDisable(GL_TEXTURE_2D);
+     glMatrixMode(GL_PROJECTION);
+     glPushMatrix();
+     glLoadIdentity();
+     glOrtho(0, TERM_SIZE, 0, TERM_SIZE, -1,1);
+     glMatrixMode(GL_MODELVIEW);
+     glPushMatrix();
+     glLoadIdentity();
+     glBegin(GL_LINES);
+     for(i=0; i<80; i++) {
+         glVertex2f(i*(TERM_SIZE/80),0.0f);
+         glVertex2f(i*(TERM_SIZE/80),TERM_SIZE);
+     }
+     for(i=0; i<25; i++) {
+         glVertex2f(0.0f,i*(TERM_SIZE/25));
+         glVertex2f(TERM_SIZE,i*(TERM_SIZE/25));
+     }
+     glEnd();
+     glEnable(GL_TEXTURE_2D);
+     int row=0;
+     int col=0;
+     glBindTexture(GL_TEXTURE_2D,term->font_texture);
+     glBegin(GL_QUADS);
+     char cur_char[2];
+     cur_char[1]=0;
+     VTermPos cur_pos;
+     for(col=0; col<80; col++) {
+         for(row=0; row<25; row++) {
+             cur_pos.row = row;
+             cur_pos.col = col;
+             cur_char[0] = term->contents[row][col];
+             OGLCONSOLE_DrawString(cur_char,col*(TERM_SIZE/80),row*(TERM_SIZE/25),CHAR_PIXEL_W,CHAR_PIXEL_H,0);
+         }
+     }
+     glEnd();
+     glPopMatrix();
+     glMatrixMode(GL_PROJECTION);
+     glPopMatrix();
+     
+/*     OGLCONSOLE_Render(c);
+     glViewport(0,0,1280,720);*/
+/*     glPushAttrib(GL_ALL_ATTRIB_BITS);
      glDisable(GL_TEXTURE_2D);
 
      glClearColor(0.0f,0.0f,0.0f,0.0f);
@@ -210,8 +257,8 @@ void render_gl_term(GLTerminal* term) {
      glPopMatrix();
      glMatrixMode(GL_PROJECTION);
      glPopMatrix();
-     glPopAttrib();
-//     glBindFramebuffer(GL_FRAMEBUFFER,0);
+     glPopAttrib();*/
+     glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
 FILE* gl_term_run(GLTerminal* term, char* cmd) {
@@ -226,6 +273,26 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
 
          rc                = tcgetattr(term->fd_slave, &slave_orig_term_settings);
          new_term_settings = slave_orig_term_settings;
+         new_term_settings.c_iflag = ICRNL|IXON;
+         new_term_settings.c_oflag = OPOST|ONLCR;
+         new_term_settings.c_cflag = CS8|CREAD;
+         new_term_settings.c_lflag = ISIG|ICANON|IEXTEN|ECHO|ECHOE|ECHOK;
+  new_term_settings.c_cc[VINTR]    = 0x1f & 'C';
+  new_term_settings.c_cc[VQUIT]    = 0x1f & '\\';
+  new_term_settings.c_cc[VERASE]   = 0x7f;
+  new_term_settings.c_cc[VKILL]    = 0x1f & 'U';
+  new_term_settings.c_cc[VEOF]     = 0x1f & 'D';
+  new_term_settings.c_cc[VEOL]     = _POSIX_VDISABLE;
+  new_term_settings.c_cc[VEOL2]    = _POSIX_VDISABLE;
+  new_term_settings.c_cc[VSTART]   = 0x1f & 'Q';
+  new_term_settings.c_cc[VSTOP]    = 0x1f & 'S';
+  new_term_settings.c_cc[VSUSP]    = 0x1f & 'Z';
+  new_term_settings.c_cc[VREPRINT] = 0x1f & 'R';
+  new_term_settings.c_cc[VWERASE]  = 0x1f & 'W';
+  new_term_settings.c_cc[VLNEXT]   = 0x1f & 'V';
+  new_term_settings.c_cc[VMIN]     = 1;
+  new_term_settings.c_cc[VTIME]    = 0;
+
          tcsetattr(term->fd_slave, TCSANOW, &new_term_settings);
          close(0);
          close(1);

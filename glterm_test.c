@@ -135,9 +135,9 @@ void render_cube(GLTerminal* t) {
       /* Top Left Of The Texture and Quad */
       glTexCoord2f( 1.0f, 1.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
     glEnd( );
-xrot += 0.3f; /* X Axis Rotation */
-    yrot += 0.2f; /* Y Axis Rotation */
-    zrot += 0.4f;
+    xrot += 0.1f; /* X Axis Rotation */
+    yrot += 0.1f; /* Y Axis Rotation */
+    zrot += 0.1f;
 }
 
 void resizeWindow( int width, int height )
@@ -202,7 +202,9 @@ int main(int argc, char** argv) {
        glClearColor(0.0f,0.0f,1.0f,1.0f);
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
        render_gl_term(t);
+
 //       render_cube(t);
+
        SDL_GL_SwapWindow(gWindow);
     }
 }
