@@ -121,6 +121,10 @@ GLTerminal* init_gl_term() {
      return term;
 }
 
+
+/*********
+  TODO - Test some different strings to figure out EOL character
+ *********/
 void update_gl_term(GLTerminal* term) {
      int rc;
      char input[150];
