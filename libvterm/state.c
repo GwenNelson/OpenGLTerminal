@@ -25,7 +25,7 @@ static void putglyph(VTermState *state, const uint32_t chars[], int width, VTerm
     if((*state->callbacks->putglyph)(&info, pos, state->cbdata))
       return;
 
-  DEBUG_LOG("libvterm: Unhandled putglyph U+%04x at (%d,%d)\n", chars[0], pos.col, pos.row);
+  fprintf(stderr,"libvterm: Unhandled putglyph U+%04x at (%d,%d)\n", chars[0], pos.col, pos.row);
 }
 
 static void updatecursor(VTermState *state, VTermPos *oldpos, int cancel_phantom)

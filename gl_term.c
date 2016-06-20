@@ -32,6 +32,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+#define DEBUG
 #include <vterm.h>
 
 #include "gl_term.h"
@@ -114,7 +115,7 @@ GLTerminal* init_gl_term() {
      glDrawBuffers(1,DrawBuffers);
      glBindFramebuffer(GL_FRAMEBUFFER,0);
 
-     memset((void*)term->contents,' ',sizeof(char)*80*25);
+
      return term;
 }
 
@@ -138,9 +139,12 @@ void update_gl_term(GLTerminal* term) {
      rect.start_col=0;
      rect.end_row=25;
      rect.end_col=80;
+     memset((void*)term->contents,0,sizeof(char)*80*25);
      vterm_screen_get_text(term->vts, &(term->contents),80*25,rect);
      term->contents[25][80]=0;
-     printf("%s\n",term->contents);
+     printf("TERMINAL START====\n");
+     printf("%s\n",(char*)term->contents);
+     printf("TERMINAL END====\n");
 }
 
 void render_gl_term(GLTerminal* term) {
