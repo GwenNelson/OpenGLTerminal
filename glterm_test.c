@@ -140,9 +140,9 @@ glMatrixMode(GL_MODELVIEW);
       /* Top Left Of The Texture and Quad */
       glTexCoord2f( 0.0f, 0.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
     glEnd( );
-    xrot += 0.1f; /* X Axis Rotation */
-    yrot += 0.9f; /* Y Axis Rotation */
-    zrot += 0.1f;
+    xrot += 0.05f; /* X Axis Rotation */
+    yrot += 0.05f; /* Y Axis Rotation */
+    zrot += 0.05;
 }
 
 void resizeWindow( int width, int height )
@@ -193,10 +193,11 @@ int main(int argc, char** argv) {
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     GLTerminal *t=init_gl_term();
-    gl_term_run(t, "top");
+    gl_term_run(t, "~/qemu.sh");
     update_gl_term(t);
     SDL_Event e;
     render_gl_term(t);
+    sleep(3);
     while(1) {
         while(SDL_PollEvent(&e)) {
            switch(e.type) {

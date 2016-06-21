@@ -148,9 +148,7 @@ void update_gl_term(GLTerminal* term) {
      rect.end_row=25;
      rect.end_col=80;
      memset((void*)term->contents,' ',sizeof(char)*80*25);
-     char buffer[25][80];
      vterm_screen_get_text(term->vts, &(term->contents),sizeof(char)*80*25,rect);
-//     memcpy(&buffer,&(term->contents),80*25*sizeof(char));
      int row=0;
      int col=0;
      VTermPos pos;
@@ -176,7 +174,8 @@ void render_gl_term(GLTerminal* term) {
      glMatrixMode(GL_PROJECTION);
      glPushMatrix();
      glLoadIdentity();
-     glOrtho(0, TERM_SIZE, 0, TERM_SIZE, -1,1);
+//     glOrtho(0, TERM_SIZE*3, 0, TERM_SIZE, -1,1);
+     glOrtho(0,TERM_SIZE*3,0,TERM_SIZE*1.5,-1,1);
      glMatrixMode(GL_MODELVIEW);
      glPushMatrix();
      glLoadIdentity();
