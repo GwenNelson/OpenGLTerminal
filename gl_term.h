@@ -52,6 +52,7 @@ GLTerminal*  init_gl_term();    // Setup the terminal
 void  update_gl_term(GLTerminal* term);  // Update the current state of the terminal - call often even when not rendering
 void  render_gl_term(GLTerminal* term);  // Render the current state of the terminal to the appropriate texture
 FILE* gl_term_run(GLTerminal* term, char* cmd);            // Run a shell command in the terminal (should only be done once)
+void  send_term_keypress(GLTerminal* term, char key); // send a keypress
 void  close_gl_term(GLTerminal* term);   // Close the terminal and cleanup
 
 #endif

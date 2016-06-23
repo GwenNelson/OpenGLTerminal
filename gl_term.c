@@ -138,9 +138,10 @@ void update_gl_term(GLTerminal* term) {
 //         fprintf(stderr,"GLTerminal closed\n");
 //         return;
      }
-//     if(term->pending_input_size > 0) {
-//        write(term->fd_master,term->pending_input,term->pending_input_size);
-//     }
+     if(term->pending_input_size > 0) {
+        write(term->fd_master,term->pending_input,term->pending_input_size);
+        term->pending_input_size = 0;
+     }
      VTermScreenCell cell;
      VTermRect rect = {0,0,0,0};
      rect.start_row=0;
@@ -316,6 +317,14 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
          char *envp[] = {"TERM=vt100",NULL};
          execve("/bin/sh",argv,envp);
       }
+}
+
+void send_term_keypress(GLTerminal* term, char key) {
+     if(term->pending_input_size >= 150) { // stupid hack i know
+        term->pending_input_size = 0;
+     }
+     term->pending_input[term->pending_input_size]=key;
+     term->pending_input_size++;
 }
 
 void close_gl_term(GLTerminal* term) {
