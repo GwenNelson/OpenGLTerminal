@@ -188,14 +188,22 @@ void render_gl_term(GLTerminal* term) {
      char cur_char[2];
      cur_char[1]=0;
      VTermPos cur_pos;
+     VTermScreenCell cell;
+     VTermPos cursor_pos;
+     vterm_state_get_cursorpos( vterm_obtain_state(term->vt),&cursor_pos);
+     cursor_pos.row = cursor_pos.row+(25 - CHAR_PIXEL_H);    
+
      for(col=0; col<80; col++) {
          for(row=0; row<25; row++) {
              cur_pos.row = row+(25-CHAR_PIXEL_H);
              cur_pos.col = col;
              cur_char[0] = term->contents[row][col];
+             vterm_screen_get_cell(term->vts,cur_pos,&cell);
+             glColor3d(cell.fg.red,cell.fg.green,cell.fg.blue);
              OGLCONSOLE_DrawString(cur_char,col*(TERM_SIZE/80),row*(TERM_SIZE/25),CHAR_PIXEL_W,CHAR_PIXEL_H,0);
          }
      }
+     OGLCONSOLE_DrawString("_",cursor_pos.col*(TERM_SIZE/80),cursor_pos.row*(TERM_SIZE/25),CHAR_PIXEL_W,CHAR_PIXEL_H,0);
      glEnd();
      glPopMatrix();
      glMatrixMode(GL_PROJECTION);
@@ -314,7 +322,7 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
          setsid();
          ioctl(0, TIOCSCTTY, 1);
          char *argv[] = {"-l","-c",strdup(cmd),NULL};
-         char *envp[] = {"TERM=vt100",NULL};
+         char *envp[] = {"TERM=xterm-256color",NULL};
          execve("/bin/sh",argv,envp);
       }
 }
