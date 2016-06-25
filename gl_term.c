@@ -163,6 +163,7 @@ void update_gl_term(GLTerminal* term) {
      }
 }
 
+
 void render_gl_term(GLTerminal* term) {
      glMatrixMode(GL_TEXTURE);
      glLoadIdentity();
@@ -193,12 +194,17 @@ void render_gl_term(GLTerminal* term) {
      vterm_state_get_cursorpos( vterm_obtain_state(term->vt),&cursor_pos);
      cursor_pos.row = cursor_pos.row+(25 - CHAR_PIXEL_H);    
 
+     glEnable(GL_BLEND);
+     glBlendFunc(GL_ONE, GL_ONE);
      for(col=0; col<80; col++) {
          for(row=0; row<25; row++) {
              cur_pos.row = row+(25-CHAR_PIXEL_H);
              cur_pos.col = col;
              cur_char[0] = term->contents[row][col];
              vterm_screen_get_cell(term->vts,cur_pos,&cell);
+             glColor3d(cell.bg.red,cell.bg.green,cell.bg.blue);
+             OGLCONSOLE_DrawString(" ",col*(TERM_SIZE/80),row*(TERM_SIZE/25),CHAR_PIXEL_W,CHAR_PIXEL_H,0);
+             glEnable(GL_TEXTURE_2D);
              glColor3d(cell.fg.red,cell.fg.green,cell.fg.blue);
              OGLCONSOLE_DrawString(cur_char,col*(TERM_SIZE/80),row*(TERM_SIZE/25),CHAR_PIXEL_W,CHAR_PIXEL_H,0);
          }
@@ -209,70 +215,6 @@ void render_gl_term(GLTerminal* term) {
      glMatrixMode(GL_PROJECTION);
      glPopMatrix();
      
-/*     OGLCONSOLE_Render(c);
-     glViewport(0,0,1280,720);*/
-/*     glPushAttrib(GL_ALL_ATTRIB_BITS);
-     glDisable(GL_TEXTURE_2D);
-
-     glClearColor(0.0f,0.0f,0.0f,0.0f);
-     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-     glMatrixMode(GL_PROJECTION);
-     glPushMatrix();
-     glLoadIdentity();
-     glOrtho(0, TERM_SIZE, 0, TERM_SIZE, -1,1);
-
-     glMatrixMode(GL_MODELVIEW);
-     glPushMatrix();
-     glLoadIdentity();
-     
-     glDisable(GL_DEPTH_TEST);
-     glDisable(GL_TEXTURE_2D);
-     glEnable(GL_BLEND);
-     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-     glColor4d(.1,0,0,0.5);
-     glBegin(GL_QUADS);
-       glVertex3d(0,0,0);
-       glVertex3d(TERM_SIZE,0,0);
-       glVertex3d(TERM_SIZE,TERM_SIZE,0);
-       glVertex3d(0,TERM_SIZE,0);
-     glEnd();
-
-     glBlendFunc(GL_ONE, GL_ONE);
-
-     glEnable(GL_TEXTURE_2D);
-     glBindTexture(GL_TEXTURE_2D, term->font_texture);
-     glColor3d(1,1,1); // text colour
-     int row=0;
-     int col=0;
-     int c;
-     double cx, cy, cX, cY;
-     double x, y, z, w, h;
-     glBegin(GL_QUADS);
-     w = TERM_SIZE/80;
-     h = TERM_SIZE/25;
-     for(row=0; row<25; row++) {
-         for(col=0; col<80; col++) {
-             c  = term->contents[row][col]-' ';
-             x  = col * w;
-             y  = row * h;
-             z  = 0.0f;
-             cx = (c % 42) * CHAR_WIDTH;
-             cy = 1.0 - (c / 42) * CHAR_HEIGHT;
-             cX = cx + CHAR_WIDTH;
-             cY = 1.0 - (c / 42 + 1) * CHAR_HEIGHT;
-             glTexCoord2d(cx, cy); glVertex3d(x,   y,   z);
-             glTexCoord2d(cX, cy); glVertex3d(x+w, y,   z);
-             glTexCoord2d(cX, cY); glVertex3d(x+w, y+h, z);
-             glTexCoord2d(cx, cY); glVertex3d(x,   y+h, z);
-
-         }
-     }
-     glEnd();
-     glPopMatrix();
-     glMatrixMode(GL_PROJECTION);
-     glPopMatrix();
-     glPopAttrib();*/
      glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
@@ -289,6 +231,7 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
 
          rc                = tcgetattr(term->fd_slave, &slave_orig_term_settings);
          new_term_settings = slave_orig_term_settings;
+         cfmakeraw(&new_term_settings);
          new_term_settings.c_iflag = ICRNL|IXON;
          new_term_settings.c_oflag = OPOST|ONLCR;
          new_term_settings.c_cflag = CS8|CREAD|OFILL;
@@ -322,7 +265,7 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
          setsid();
          ioctl(0, TIOCSCTTY, 1);
          char *argv[] = {"-l","-c",strdup(cmd),NULL};
-         char *envp[] = {"TERM=xterm-256color",NULL};
+         char *envp[] = {"TERM=xterm-256colour",NULL};
          execve("/bin/sh",argv,envp);
       }
 }
