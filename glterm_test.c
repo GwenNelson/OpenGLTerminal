@@ -38,7 +38,7 @@
 #endif
 
 #include <SDL.h>
-
+#include <pthread.h>
 SDL_Surface *surface;
 SDL_Window *gWindow;
 
@@ -73,9 +73,9 @@ void render_cube(GLTerminal* t) {
      
      glBindTexture(GL_TEXTURE_2D,t->render_target);
 
-glMatrixMode(GL_TEXTURE);
+/*glMatrixMode(GL_TEXTURE);
 glLoadIdentity();
-glScalef(1.0f, -1.0f, 1.0f);
+glScalef(1.0f, -1.0f, 1.0f);*/
 glMatrixMode(GL_MODELVIEW);
 
      glEnable(GL_TEXTURE_2D);
@@ -140,9 +140,9 @@ glMatrixMode(GL_MODELVIEW);
       /* Top Left Of The Texture and Quad */
       glTexCoord2f( 0.0f, 0.0f ); glVertex3f( -1.0f,  1.0f, -1.0f );
     glEnd( );
-//    xrot += 0.01f; /* X Axis Rotation */
-//    yrot += 0.01f; /* Y Axis Rotation */
-//    zrot += 0.01f;
+    xrot += 0.15f; /* X Axis Rotation */
+    yrot += 0.15f; /* Y Axis Rotation */
+    zrot += 0.15f;
 }
 
 void resizeWindow( int width, int height )
@@ -177,6 +177,9 @@ void resizeWindow( int width, int height )
 
 }
 
+void update_thread(GLTerminal *t) {
+     while(1) update_gl_term(t);
+}
 
 int main(int argc, char** argv) {
     SDL_Init(SDL_INIT_VIDEO);
@@ -192,12 +195,15 @@ int main(int argc, char** argv) {
     init_gl();
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    GLTerminal *t=init_gl_term();
+    GLTerminal *t=init_vnc_term();
 //    gl_term_run(t, "~/qemu_test/qemu.sh");
-    gl_term_run(t,"/bin/sh");
+//    gl_term_run(t,"/bin/sh");
+    term_connect_vnc(t,"127.0.0.1",5901);
     update_gl_term(t);
     SDL_Event e;
     render_gl_term(t);
+    pthread_t updater;
+    pthread_create(&updater,NULL,&update_thread,t);
     while(1) {
         while(SDL_PollEvent(&e)) {
            switch(e.type) {
@@ -211,7 +217,6 @@ int main(int argc, char** argv) {
         }
        glClearColor(0.0f,0.0f,1.0f,1.0f);
        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-       update_gl_term(t);
 
        render_gl_term(t);
 

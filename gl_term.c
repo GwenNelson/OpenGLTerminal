@@ -33,6 +33,8 @@
 #include <unistd.h>
 #include <util.h>
 
+#include <rfb/rfbclient.h>
+
 #define DEBUG
 #include <vterm.h>
 #include "oglconsole.h"
@@ -52,7 +54,39 @@
 #define CHAR_WIDTH 0.0234375 /* ogl tex coords */
 #define CHAR_HEIGHT 0.203125 /* ogl tex coords */
 
-#define TERM_SIZE 512
+#define TERM_SIZE 640
+
+void setup_render_context(GLTerminal* term) {
+
+     // setup font
+     glGenTextures(1,&(term->font_texture));
+     glBindTexture(GL_TEXTURE_2D, term->font_texture);
+
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+     glTexImage2D(GL_TEXTURE_2D,0, GL_RGB, Console_FontData.width,
+                                           Console_FontData.height,
+                                           0, GL_RGB, GL_UNSIGNED_BYTE, Console_FontData.pixel_data);
+
+     // configure render target
+     glGenFramebuffers(1,&(term->render_target_fb));
+     glBindFramebuffer(GL_FRAMEBUFFER,term->render_target_fb);
+
+     GLuint tex_id;
+     glGenTextures(1,&tex_id);
+     term->render_target = tex_id;
+     glBindTexture(GL_TEXTURE_2D,tex_id);
+
+     glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, 640, 480, 0,GL_RGBA, GL_UNSIGNED_BYTE,NULL);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, term->render_target,0);
+     GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+     glDrawBuffers(1,DrawBuffers);
+     glBindFramebuffer(GL_FRAMEBUFFER,0);
+}
+
 GLTerminal* init_gl_term() {
      int rc=0;
      GLTerminal* term  = (GLTerminal*)malloc(sizeof(GLTerminal));
@@ -89,44 +123,84 @@ GLTerminal* init_gl_term() {
 
      term->render_target_fb=0;
 
-     // setup font
-     glGenTextures(1,&(term->font_texture));
-     glBindTexture(GL_TEXTURE_2D, term->font_texture);
+     setup_render_context(term);
 
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-     glTexImage2D(GL_TEXTURE_2D,0, GL_RGB, Console_FontData.width,
-                                           Console_FontData.height,
-                                           0, GL_RGB, GL_UNSIGNED_BYTE, Console_FontData.pixel_data);
-
-     // configure render target
-     glGenFramebuffers(1,&(term->render_target_fb));
-     glBindFramebuffer(GL_FRAMEBUFFER,term->render_target_fb);
-
-     GLuint tex_id;
-     glGenTextures(1,&tex_id);
-     term->render_target = tex_id;
-     glBindTexture(GL_TEXTURE_2D,tex_id);
-
-     glTexImage2D(GL_TEXTURE_2D, 0,3, TERM_SIZE, TERM_SIZE, 0,GL_RGB, GL_UNSIGNED_BYTE,NULL);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, term->render_target,0);
-     GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-     glDrawBuffers(1,DrawBuffers);
-     glBindFramebuffer(GL_FRAMEBUFFER,0);
-
-
+     term->vnc = NULL;
      return term;
 }
 
+
+GLTerminal* init_vnc_term() {
+     GLTerminal* term  = (GLTerminal*)malloc(sizeof(GLTerminal));
+     term->vnc         = rfbGetClient(8,3,4);
+     term->vnc_pixels  = NULL;
+
+     term->vnc->format.bitsPerPixel=32;
+
+     term->pending_input_size=0;
+     setup_render_context(term);
+     return term;
+}
+
+void update_vnc_term(GLTerminal* term);
+void term_connect_vnc(GLTerminal* t, char* hostname, int port) {
+     int argc=2;
+     char hosturl[1024];
+     snprintf(hosturl,1024,"%s:%d",hostname,port);
+     char* argv[2]={"gl_term",hosturl};
+     rfbInitClient(t->vnc,&argc,argv);
+     t->vnc_w = 0;
+     t->vnc_h = 0;
+     update_vnc_term(t);
+}
+
+void update_vnc_term(GLTerminal* term) {
+     term->vnc->format.bitsPerPixel=32;
+     if(term->vnc_pixels==NULL) {
+        printf("Allocating buffer\n");
+        term->vnc_w      = term->vnc->width;
+        term->vnc_h      = term->vnc->height;
+        int bytesPerPixel = term->vnc->format.bitsPerPixel / 8;
+        int size          = term->vnc_w * bytesPerPixel * term->vnc_h;
+        term->vnc_pixels = term->vnc->frameBuffer = malloc(size);
+     }
+     term->vnc->updateRect.x=0;
+     term->vnc->updateRect.y=0;
+     term->vnc->updateRect.w = term->vnc_w;
+     term->vnc->updateRect.h = term->vnc_h;
+     term->vnc->format.redShift=0;
+     term->vnc->format.greenShift=8;
+     term->vnc->format.blueShift=16;
+     term->vnc->format.redMax=255;
+     term->vnc->format.greenMax=255;
+     term->vnc->format.blueMax=255;
+
+
+     SetFormatAndEncodings(term->vnc);
+     if(term->pending_input_size > 0) {
+        int i;
+        for(i=0; i<term->pending_input_size; i++) {
+            SendKeyEvent(term->vnc,term->pending_input[i],1);
+        }
+        term->pending_input_size = 0;
+     }
+
+     SendFramebufferUpdateRequest(term->vnc,0,0,term->vnc_w,term->vnc_h,1);
+     WaitForMessage(term->vnc,50);
+     HandleRFBServerMessage(term->vnc);
+
+
+}
 
 /*********
   TODO - Test some different strings to figure out EOL character
          Split terminal into rows
  *********/
 void update_gl_term(GLTerminal* term) {
+     if(term->vnc != NULL) {
+        update_vnc_term(term);
+        return;
+     }
      int rc;
      char input[150];
      memset((void*)input,0,150);
@@ -163,8 +237,38 @@ void update_gl_term(GLTerminal* term) {
      }
 }
 
+void render_term_vnc(GLTerminal* term) {
+     glDisable(GL_TEXTURE_2D);
+     glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
+     glMatrixMode(GL_PROJECTION);
+     glPushMatrix();
+     glLoadIdentity();
+     glMatrixMode(GL_MODELVIEW);
+     glPushMatrix();
+     glLoadIdentity();
+     glOrtho( 0.0, term->vnc_w, term->vnc_h,0.0,  1.0, -1.0 );
+     glColor3d(1,1,1);
+     glClearColor(0.0f,0.0f,0.0f,0.0f);
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+     
+     glDrawPixels(640,480,GL_RGBA,GL_UNSIGNED_BYTE,term->vnc_pixels);
+     
+     GLenum err;
+     while((err=glGetError()) != GL_NO_ERROR) {
+         printf("OpenGL error %d\n",err);
+     }
+     glPopMatrix();
+     glMatrixMode(GL_PROJECTION);
+     glPopMatrix();
+     glBindFramebuffer(GL_FRAMEBUFFER,0);
+     glEnable(GL_TEXTURE_2D);
+}
 
 void render_gl_term(GLTerminal* term) {
+     if(term->vnc != NULL) {
+        render_term_vnc(term);
+        return;
+     }
      glMatrixMode(GL_TEXTURE);
      glLoadIdentity();
      glBindFramebuffer(GL_FRAMEBUFFER, term->render_target_fb);
