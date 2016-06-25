@@ -265,7 +265,7 @@ FILE* gl_term_run(GLTerminal* term, char* cmd) {
          setsid();
          ioctl(0, TIOCSCTTY, 1);
          char *argv[] = {"-l","-c",strdup(cmd),NULL};
-         char *envp[] = {"TERM=xterm-256colour",NULL};
+         char *envp[] = {"TERM=xterm-256color",NULL};
          execve("/bin/sh",argv,envp);
       }
 }
